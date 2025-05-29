@@ -1,0 +1,28 @@
+{
+  "name": "@scorzeth/anki-mcp-server",
+  "version": "1.0.0",
+  "description": "An MCP server for interacting with your Anki",
+  "license": "MIT",
+  "author": "Scott Orzech & Wai Son Wong",
+  "type": "module",
+  "bin": {
+    "anki-server": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.0.3",
+    "yanki-connect": "^2.1.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "typescript": "^5.7.2"
+  }
+}
