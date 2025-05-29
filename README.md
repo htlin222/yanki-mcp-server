@@ -1,6 +1,6 @@
 # Anki MCP Server
 
-An MCP server implementation that connects to a locally running Anki, providing card review and creation.
+An MCP server implementation that connects to a locally running Anki, providing card review and creation. This is a fork of [scorzeth/anki-mcp-server](https://github.com/scorzeth/anki-mcp-server) with date-based organization features.
 
 This server is designed to work with the [Anki desktop app](https://apps.ankiweb.net/) and the [Anki-Connect](https://foosoft.net/projects/anki-connect/) add-on.
 
@@ -24,7 +24,7 @@ Make sure you have the add-on installed before using.
     - `answers` (array): Array of objects with `cardId` (number) and `ease` (number) fields
 
 - **add_card**
-  - Creates a new card in the Default Anki deck
+  - Creates a new card in a date-structured deck (format: `DECK::YYYY::MM::DD`)
   - Inputs:
     - `front` (string): Front of card
     - `back` (string): Back of card
@@ -67,7 +67,10 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 {
   "mcpServers": {
     "anki-mcp-server": {
-      "command": "/path/to/anki-mcp-server/build/index.js"
+      "command": "/Users/htlin/anki-mcp-server/build/index.js",
+      "env": {
+        "DECK": "Default"
+      }
     }
   }
 }
@@ -82,3 +85,37 @@ npm run inspector
 ```
 
 The Inspector will provide a URL to access debugging tools in your browser.
+
+## Date-Based Card Organization
+
+This server automatically organizes new cards using a date-based structure instead of traditional topic-based organization. When you create a new card, it's added to a deck with the following format:
+
+```
+DECK::YYYY::MM::DD
+```
+
+Where:
+- `DECK` is the base deck name (default: "00_Inbox" or configured via environment variable)
+- `YYYY` is the 4-digit year
+- `MM` is the 2-digit month
+- `DD` is the 2-digit day
+
+### Benefits of Date-Based Organization
+
+1. **Effortless Organization**: Cards are automatically organized by creation date without manual categorization
+2. **Temporal Context**: Review cards created during specific time periods (e.g., during a course or project)
+3. **Natural Spaced Repetition**: Cards naturally group by when you learned concepts
+4. **Time-Efficient**: No need to spend time deciding which category each card belongs to
+5. **Historical Record**: See your learning journey over time
+
+### Configuration
+
+You can customize the base deck name by setting the `DECK` environment variable in your MCP server configuration:
+
+```json
+"env": {
+  "DECK": "YourCustomDeckName"
+}
+```
+
+If not specified, it defaults to "00_Inbox".
