@@ -1,21 +1,44 @@
 {
-  "name": "@scorzeth/anki-mcp-server",
+  "name": "yanki-mcp-server",
   "version": "1.0.0",
-  "description": "An MCP server for interacting with your Anki",
+  "description": "A Model Context Protocol server for interacting with Anki flashcards",
   "license": "MIT",
-  "author": "Scott Orzech & Wai Son Wong",
+  "author": "Hsieh-Ting Lin <htlin222@gmail.com>",
   "type": "module",
   "bin": {
-    "anki-server": "./build/index.js"
+    "yanki-server": "./build/index.js"
   },
   "files": [
     "build"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "anki",
+    "mcp",
+    "server",
+    "flashcards",
+    "model-context-protocol"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/htlin222/yanki-mcp-server.git"
+  },
+  "homepage": "https://github.com/htlin222/yanki-mcp-server",
+  "bugs": {
+    "url": "https://github.com/htlin222/yanki-mcp-server/issues"
+  },
   "scripts": {
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "prepare": "npm run build",
     "watch": "tsc --watch",
-    "inspector": "npx @modelcontextprotocol/inspector build/index.js"
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js",
+    "start": "node build/index.js",
+    "dev": "tsc && node build/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.0.3",

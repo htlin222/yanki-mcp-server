@@ -1,6 +1,8 @@
-# Anki MCP Server
+# Yanki MCP Server
 
-An MCP server implementation that connects to a locally running Anki, providing card review and creation. This is a fork of [scorzeth/anki-mcp-server](https://github.com/scorzeth/anki-mcp-server) with date-based organization features.
+A Model Context Protocol server implementation that connects to a locally running Anki, providing card review and creation. This is a fork of [scorzeth/anki-mcp-server](https://github.com/scorzeth/anki-mcp-server) with date-based organization features.
+
+Available as an npm package: [yanki-mcp-server](https://www.npmjs.com/package/yanki-mcp-server)
 
 This server is designed to work with the [Anki desktop app](https://apps.ankiweb.net/) and the [Anki-Connect](https://foosoft.net/projects/anki-connect/) add-on.
 
@@ -39,10 +41,28 @@ Make sure you have the add-on installed before using.
   - Inputs:
     - `num` (number): Number of cards
 
+## Installation & Usage
+
+You can use this package without installation via npx:
+
+```bash
+npx yanki-mcp-server
+```
+
+Or install it globally:
+
+```bash
+npm install -g yanki-mcp-server
+yanki-server
+```
+
 ## Development
 
-Install dependencies:
+Clone the repository and install dependencies:
+
 ```bash
+git clone https://github.com/htlin222/yanki-mcp-server.git
+cd yanki-mcp-server
 npm install
 ```
 
@@ -56,6 +76,11 @@ For development with auto-rebuild:
 npm run watch
 ```
 
+Run the server directly during development:
+```bash
+npm run dev
+```
+
 ## Configuration 
 
 To use with Claude Desktop, add the server config:
@@ -66,8 +91,9 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 ```json
 {
   "mcpServers": {
-    "anki-mcp-server": {
-      "command": "/Users/htlin/anki-mcp-server/build/index.js",
+    "yanki-mcp-server": {
+      "command": "npx",
+      "args": ["yanki-mcp-server"],
       "env": {
         "DECK": "Default"
       }
