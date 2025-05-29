@@ -13,9 +13,9 @@ import { YankiConnect } from "yanki-connect";
 const client = new YankiConnect();
 
 // Default inbox prefix if environment variable is not set
-const DEFAULT_INBOX_PREFIX = "00_Inbox";
+const DEFAULT_DECK = "00_Inbox";
 // Get inbox prefix from environment variable or use default
-const INBOX_PREFIX = process.env.ANKI_INBOX_PREFIX || DEFAULT_INBOX_PREFIX;
+const DECK = process.env.ANKI_DECK || DEFAULT_DECK;
 
 interface Card {
   cardId: number;
@@ -129,7 +129,7 @@ function getTodayDeckName(): string {
   const yyyy = today.getFullYear();
   const mm = String(today.getMonth() + 1).padStart(2, "0");
   const dd = String(today.getDate()).padStart(2, "0");
-  return `${INBOX_PREFIX}::${yyyy}${mm}${dd}`;
+  return `${DECK}::${yyyy}::${mm}::${dd}`;
 }
 
 /**
