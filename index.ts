@@ -388,8 +388,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
  * This allows the server to communicate via standard input/output streams.
  */
 async function main() {
+  // Display welcome message and status
+  console.log('\n======================================');
+  console.log('🃏 Yanki MCP Server');
+  console.log('======================================');
+  console.log('Server is running and ready to connect with MCP clients.');
+  console.log('\nAvailable Tools:');
+  console.log('- add_card: Create a new flashcard');
+  console.log('- get_due_cards: Get cards due for review');
+  console.log('- get_new_cards: Get new and unseen cards');
+  console.log('- update_cards: Mark cards as answered');
+  console.log('\nThis server is meant to be used with MCP clients like Cascade AI.');
+  console.log('It will not respond to direct terminal input.');
+  console.log('\nTo test the server, run: npm run inspector');
+  console.log('======================================\n');
+  
+  // Check Anki connection
+  try {
+    const deckNames = await client.deck.deckNames();
+    console.log(`✅ Connected to Anki with ${deckNames.length} decks available`);
+    console.log(`📝 Today's deck: ${getTodayDeckName()}\n`);
+  } catch (error: unknown) {
+    console.error('❌ Failed to connect to Anki. Make sure Anki is running with AnkiConnect plugin installed.');
+    console.error('Error details:', error instanceof Error ? error.message : String(error));
+  }
+  
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  console.log('Server connected and waiting for commands...');
 }
 
 main().catch((error) => {

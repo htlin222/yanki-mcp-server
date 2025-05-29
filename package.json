@@ -1,24 +1,32 @@
 {
 	"name": "yanki-mcp-server",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "A Model Context Protocol server for interacting with Anki flashcards",
 	"license": "MIT",
 	"author": "Hsieh-Ting Lin <htlin222@gmail.com>",
 	"type": "module",
 	"bin": {
-		"yanki-server": "./build/index.js"
+		"yanki-server": "build/index.js"
 	},
-	"files": ["build"],
+	"files": [
+		"build"
+	],
 	"publishConfig": {
 		"access": "public"
 	},
-	"keywords": ["anki", "mcp", "server", "flashcards", "model-context-protocol"],
+	"keywords": [
+		"anki",
+		"mcp",
+		"server",
+		"flashcards",
+		"model-context-protocol"
+	],
 	"engines": {
 		"node": ">=16"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/htlin222/yanki-mcp-server.git"
+		"url": "git+https://github.com/htlin222/yanki-mcp-server.git"
 	},
 	"homepage": "https://github.com/htlin222/yanki-mcp-server",
 	"bugs": {
