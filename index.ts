@@ -144,14 +144,17 @@ async function createDeckIfNeeded(deckName: string): Promise<boolean> {
 
     // If deck doesn't exist, create it
     if (!deckNames.includes(deckName)) {
-      const result = await client.deck.createDeck({ deck: deckName });
-      return result !== null;
+      // Use YankiConnect's native createDeck method
+      const deckId = await client.deck.createDeck({ deck: deckName });
+      console.log(`Created deck '${deckName}' with ID: ${deckId}`);
+      return deckId !== null;
     }
 
     // Deck already exists
+    console.log(`Deck '${deckName}' already exists`);
     return true;
   } catch (error) {
-    console.error("Error creating deck:", error);
+    console.error(`Error creating deck '${deckName}':`, error);
     return false;
   }
 }
