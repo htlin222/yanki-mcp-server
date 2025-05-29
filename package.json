@@ -1,51 +1,43 @@
 {
-  "name": "yanki-mcp-server",
-  "version": "1.0.0",
-  "description": "A Model Context Protocol server for interacting with Anki flashcards",
-  "license": "MIT",
-  "author": "Hsieh-Ting Lin <htlin222@gmail.com>",
-  "type": "module",
-  "bin": {
-    "yanki-server": "./build/index.js"
-  },
-  "files": [
-    "build"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "keywords": [
-    "anki",
-    "mcp",
-    "server",
-    "flashcards",
-    "model-context-protocol"
-  ],
-  "engines": {
-    "node": ">=16"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/htlin222/yanki-mcp-server.git"
-  },
-  "homepage": "https://github.com/htlin222/yanki-mcp-server",
-  "bugs": {
-    "url": "https://github.com/htlin222/yanki-mcp-server/issues"
-  },
-  "scripts": {
-    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
-    "prepare": "npm run build",
-    "watch": "tsc --watch",
-    "inspector": "npx @modelcontextprotocol/inspector build/index.js",
-    "start": "node build/index.js",
-    "dev": "tsc && node build/index.js"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "1.0.3",
-    "yanki-connect": "^2.1.8"
-  },
-  "devDependencies": {
-    "@types/node": "^20.17.10",
-    "typescript": "^5.7.2"
-  }
+	"name": "yanki-mcp-server",
+	"version": "1.0.1",
+	"description": "A Model Context Protocol server for interacting with Anki flashcards",
+	"license": "MIT",
+	"author": "Hsieh-Ting Lin <htlin222@gmail.com>",
+	"type": "module",
+	"bin": {
+		"yanki-server": "./build/index.js"
+	},
+	"files": ["build"],
+	"publishConfig": {
+		"access": "public"
+	},
+	"keywords": ["anki", "mcp", "server", "flashcards", "model-context-protocol"],
+	"engines": {
+		"node": ">=16"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/htlin222/yanki-mcp-server.git"
+	},
+	"homepage": "https://github.com/htlin222/yanki-mcp-server",
+	"bugs": {
+		"url": "https://github.com/htlin222/yanki-mcp-server/issues"
+	},
+	"scripts": {
+		"build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+		"prepare": "npm run build",
+		"watch": "tsc --watch",
+		"inspector": "npx @modelcontextprotocol/inspector build/index.js",
+		"start": "node build/index.js",
+		"dev": "tsc && node build/index.js"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "1.0.3",
+		"yanki-connect": "^2.1.8"
+	},
+	"devDependencies": {
+		"@types/node": "^20.17.10",
+		"typescript": "^5.7.2"
+	}
 }

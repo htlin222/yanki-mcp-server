@@ -13,9 +13,9 @@ import { YankiConnect } from "yanki-connect";
 const client = new YankiConnect();
 
 // Default inbox prefix if environment variable is not set
-const DEFAULT_DECK = "00_Inbox";
+const DECK = "00_Inbox";
 // Get inbox prefix from environment variable or use default
-const PREFIX_DECK = process.env.ANKI_DECK || DEFAULT_DECK;
+const PREFIX_DECK = process.env.ANKI_DECK || DECK;
 
 interface Card {
   cardId: number;
