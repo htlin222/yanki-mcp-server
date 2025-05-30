@@ -145,3 +145,11 @@ You can customize the base deck name by setting the `DECK` environment variable 
 ```
 
 If not specified, it defaults to "00_Inbox".
+
+## Changelog
+
+### 1.0.3 (2025-05-31)
+- Fixed MCP communication protocol issue by redirecting all console output to log files
+- Added file-based logging system that preserves all debug and status information
+- Logs are stored in the `logs` directory with date-based filenames
+- Ensured clean stdout communication for proper MCP JSON-RPC protocol compliance

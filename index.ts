@@ -8,6 +8,8 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import * as fs from 'fs';
+import * as path from 'path';
 
 import { YankiConnect } from "yanki-connect";
 const client = new YankiConnect();
@@ -16,6 +18,25 @@ const client = new YankiConnect();
 const DECK = "00_Inbox";
 // Get inbox prefix from environment variable or use default
 const PREFIX_DECK = process.env.ANKI_DECK || DECK;
+
+// Setup logging to file instead of stdout
+const LOG_DIR = process.env.YANKI_LOG_DIR || path.join(process.cwd(), 'logs');
+const LOG_FILE = path.join(LOG_DIR, `yanki-mcp-${new Date().toISOString().split('T')[0]}.log`);
+
+// Create logs directory if it doesn't exist
+if (!fs.existsSync(LOG_DIR)) {
+  fs.mkdirSync(LOG_DIR, { recursive: true });
+}
+
+// Custom logger that writes to file instead of stdout
+const logger = {
+  log: (message: string) => {
+    fs.appendFileSync(LOG_FILE, `[INFO] ${new Date().toISOString()} ${message}\n`);
+  },
+  error: (message: string) => {
+    fs.appendFileSync(LOG_FILE, `[ERROR] ${new Date().toISOString()} ${message}\n`);
+  }
+};
 
 interface Card {
   cardId: number;
@@ -146,15 +167,15 @@ async function createDeckIfNeeded(deckName: string): Promise<boolean> {
     if (!deckNames.includes(deckName)) {
       // Use YankiConnect's native createDeck method
       const deckId = await client.deck.createDeck({ deck: deckName });
-      console.log(`Created deck '${deckName}' with ID: ${deckId}`);
+      logger.log(`Created deck '${deckName}' with ID: ${deckId}`);
       return deckId !== null;
     }
 
     // Deck already exists
-    console.log(`Deck '${deckName}' already exists`);
+    logger.log(`Deck '${deckName}' already exists`);
     return true;
   } catch (error) {
-    console.error(`Error creating deck '${deckName}':`, error);
+    logger.error(`Error creating deck '${deckName}': ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
 }
@@ -388,37 +409,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
  * This allows the server to communicate via standard input/output streams.
  */
 async function main() {
-  // Display welcome message and status
-  console.log('\n======================================');
-  console.log('🃏 Yanki MCP Server');
-  console.log('======================================');
-  console.log('Server is running and ready to connect with MCP clients.');
-  console.log('\nAvailable Tools:');
-  console.log('- add_card: Create a new flashcard');
-  console.log('- get_due_cards: Get cards due for review');
-  console.log('- get_new_cards: Get new and unseen cards');
-  console.log('- update_cards: Mark cards as answered');
-  console.log('\nThis server is meant to be used with MCP clients like Cascade AI.');
-  console.log('It will not respond to direct terminal input.');
-  console.log('\nTo test the server, run: npm run inspector');
-  console.log('======================================\n');
+  // Log welcome message and status to file, not stdout
+  logger.log('======================================');
+  logger.log('🃏 Yanki MCP Server');
+  logger.log('======================================');
+  logger.log('Server is running and ready to connect with MCP clients.');
+  logger.log('Available Tools:');
+  logger.log('- add_card: Create a new flashcard');
+  logger.log('- get_due_cards: Get cards due for review');
+  logger.log('- get_new_cards: Get new and unseen cards');
+  logger.log('- update_cards: Mark cards as answered');
+  logger.log('This server is meant to be used with MCP clients like Cascade AI.');
+  logger.log('It will not respond to direct terminal input.');
+  logger.log('To test the server, run: npm run inspector');
+  logger.log('======================================');
   
   // Check Anki connection
   try {
     const deckNames = await client.deck.deckNames();
-    console.log(`✅ Connected to Anki with ${deckNames.length} decks available`);
-    console.log(`📝 Today's deck: ${getTodayDeckName()}\n`);
+    logger.log(`✅ Connected to Anki with ${deckNames.length} decks available`);
+    logger.log(`📝 Today's deck: ${getTodayDeckName()}`);
   } catch (error: unknown) {
-    console.error('❌ Failed to connect to Anki. Make sure Anki is running with AnkiConnect plugin installed.');
-    console.error('Error details:', error instanceof Error ? error.message : String(error));
+    logger.error('❌ Failed to connect to Anki. Make sure Anki is running with AnkiConnect plugin installed.');
+    logger.error(`Error details: ${error instanceof Error ? error.message : String(error)}`);
   }
   
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.log('Server connected and waiting for commands...');
+  logger.log('Server connected and waiting for commands...');
 }
 
 main().catch((error) => {
-  console.error("Server error:", error);
+  logger.error(`Server error: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);
 });
