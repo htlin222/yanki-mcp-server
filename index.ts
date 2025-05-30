@@ -218,7 +218,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "add_card",
         description:
-          'Create a new flashcard in Anki for the user. Must use HTML formatting only. IMPORTANT FORMATTING RULES:\n1. Must use HTML tags for ALL formatting - NO markdown\n2. Use <br> for ALL line breaks\n3. For code blocks, use <pre> with inline CSS styling\n4. Example formatting:\n   - Line breaks: <br>\n   - Code: <pre style="background-color: transparent; padding: 10px; border-radius: 5px;">\n   - Lists: <ol> and <li> tags\n   - Bold: <strong>\n   - Italic: <em>',
+          'Create a new flashcard in Anki for the user. Must use HTML formatting only. IMPORTANT FORMATTING RULES:\n1. Must use HTML tags for ALL formatting - NO markdown\n2. Use <br> for ALL line breaks\n3. For code blocks, use <pre> with inline CSS styling\n4. Example formatting:\n   - Line breaks: <br>\n   - Code: <pre style="background-color: transparent; padding: 10px; border-radius: 5px;">\n   - Title: <h2> to <h6> tags\n   - Lists: <ol> and <li> tags\n   - Bold: <strong>\n   - Italic: <em>',
         inputSchema: {
           type: "object",
           properties: {
