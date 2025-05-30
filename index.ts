@@ -20,21 +20,67 @@ const DECK = "00_Inbox";
 const PREFIX_DECK = process.env.ANKI_DECK || DECK;
 
 // Setup logging to file instead of stdout
+// Use a relative path for logs directory, not an absolute path
 const LOG_DIR = process.env.YANKI_LOG_DIR || path.join(process.cwd(), 'logs');
 const LOG_FILE = path.join(LOG_DIR, `yanki-mcp-${new Date().toISOString().split('T')[0]}.log`);
 
-// Create logs directory if it doesn't exist
-if (!fs.existsSync(LOG_DIR)) {
-  fs.mkdirSync(LOG_DIR, { recursive: true });
+// For debugging
+const isAbsolutePath = path.isAbsolute(LOG_DIR);
+if (isAbsolutePath) {
+  // If LOG_DIR is absolute but not from env var, make it relative to cwd
+  if (!process.env.YANKI_LOG_DIR) {
+    // Just use ./logs as a fallback
+    const fallbackLogDir = path.join(process.cwd(), 'logs');
+    fs.mkdirSync(fallbackLogDir, { recursive: true });
+  }
 }
+
+// Always ensure we have a valid logs directory relative to the current working directory
+const ensureLogDir = () => {
+  try {
+    // Always use a path relative to the current working directory
+    const safeLogDir = path.isAbsolute(LOG_DIR) && !process.env.YANKI_LOG_DIR
+      ? path.join(process.cwd(), 'logs')
+      : LOG_DIR;
+    
+    if (!fs.existsSync(safeLogDir)) {
+      fs.mkdirSync(safeLogDir, { recursive: true });
+    }
+    return safeLogDir;
+  } catch (error) {
+    // If we can't create the log directory, fall back to the current directory
+    const fallbackDir = path.join(process.cwd(), 'logs');
+    try {
+      if (!fs.existsSync(fallbackDir)) {
+        fs.mkdirSync(fallbackDir, { recursive: true });
+      }
+      return fallbackDir;
+    } catch (innerError) {
+      // Last resort: use the current directory
+      return process.cwd();
+    }
+  }
+};
+
+// Ensure log directory exists
+const safeLogDir = ensureLogDir();
+const safeLogFile = path.join(safeLogDir, `yanki-mcp-${new Date().toISOString().split('T')[0]}.log`);
 
 // Custom logger that writes to file instead of stdout
 const logger = {
   log: (message: string) => {
-    fs.appendFileSync(LOG_FILE, `[INFO] ${new Date().toISOString()} ${message}\n`);
+    try {
+      fs.appendFileSync(safeLogFile, `[INFO] ${new Date().toISOString()} ${message}\n`);
+    } catch (error) {
+      // Silent fail - we don't want to break the MCP protocol if logging fails
+    }
   },
   error: (message: string) => {
-    fs.appendFileSync(LOG_FILE, `[ERROR] ${new Date().toISOString()} ${message}\n`);
+    try {
+      fs.appendFileSync(safeLogFile, `[ERROR] ${new Date().toISOString()} ${message}\n`);
+    } catch (error) {
+      // Silent fail - we don't want to break the MCP protocol if logging fails
+    }
   }
 };
 
