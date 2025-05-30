@@ -1,4 +1,4 @@
-# Yanki MCP Server
+# Yanki MCP Server ( Yet Another Anki MCP Server )
 
 A Model Context Protocol server implementation that connects to a locally running Anki, providing card review and creation. This is a fork of [scorzeth/anki-mcp-server](https://github.com/scorzeth/anki-mcp-server) with date-based organization features.
 
