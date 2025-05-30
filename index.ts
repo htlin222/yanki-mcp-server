@@ -8,8 +8,6 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import * as fs from 'fs';
-import * as path from 'path';
 
 import { YankiConnect } from "yanki-connect";
 const client = new YankiConnect();
@@ -18,71 +16,6 @@ const client = new YankiConnect();
 const DECK = "00_Inbox";
 // Get inbox prefix from environment variable or use default
 const PREFIX_DECK = process.env.ANKI_DECK || DECK;
-
-// Setup logging to file instead of stdout
-// Use a relative path for logs directory, not an absolute path
-const LOG_DIR = process.env.YANKI_LOG_DIR || path.join(process.cwd(), 'logs');
-const LOG_FILE = path.join(LOG_DIR, `yanki-mcp-${new Date().toISOString().split('T')[0]}.log`);
-
-// For debugging
-const isAbsolutePath = path.isAbsolute(LOG_DIR);
-if (isAbsolutePath) {
-  // If LOG_DIR is absolute but not from env var, make it relative to cwd
-  if (!process.env.YANKI_LOG_DIR) {
-    // Just use ./logs as a fallback
-    const fallbackLogDir = path.join(process.cwd(), 'logs');
-    fs.mkdirSync(fallbackLogDir, { recursive: true });
-  }
-}
-
-// Always ensure we have a valid logs directory relative to the current working directory
-const ensureLogDir = () => {
-  try {
-    // Always use a path relative to the current working directory
-    const safeLogDir = path.isAbsolute(LOG_DIR) && !process.env.YANKI_LOG_DIR
-      ? path.join(process.cwd(), 'logs')
-      : LOG_DIR;
-    
-    if (!fs.existsSync(safeLogDir)) {
-      fs.mkdirSync(safeLogDir, { recursive: true });
-    }
-    return safeLogDir;
-  } catch (error) {
-    // If we can't create the log directory, fall back to the current directory
-    const fallbackDir = path.join(process.cwd(), 'logs');
-    try {
-      if (!fs.existsSync(fallbackDir)) {
-        fs.mkdirSync(fallbackDir, { recursive: true });
-      }
-      return fallbackDir;
-    } catch (innerError) {
-      // Last resort: use the current directory
-      return process.cwd();
-    }
-  }
-};
-
-// Ensure log directory exists
-const safeLogDir = ensureLogDir();
-const safeLogFile = path.join(safeLogDir, `yanki-mcp-${new Date().toISOString().split('T')[0]}.log`);
-
-// Custom logger that writes to file instead of stdout
-const logger = {
-  log: (message: string) => {
-    try {
-      fs.appendFileSync(safeLogFile, `[INFO] ${new Date().toISOString()} ${message}\n`);
-    } catch (error) {
-      // Silent fail - we don't want to break the MCP protocol if logging fails
-    }
-  },
-  error: (message: string) => {
-    try {
-      fs.appendFileSync(safeLogFile, `[ERROR] ${new Date().toISOString()} ${message}\n`);
-    } catch (error) {
-      // Silent fail - we don't want to break the MCP protocol if logging fails
-    }
-  }
-};
 
 interface Card {
   cardId: number;
@@ -213,15 +146,12 @@ async function createDeckIfNeeded(deckName: string): Promise<boolean> {
     if (!deckNames.includes(deckName)) {
       // Use YankiConnect's native createDeck method
       const deckId = await client.deck.createDeck({ deck: deckName });
-      logger.log(`Created deck '${deckName}' with ID: ${deckId}`);
       return deckId !== null;
     }
 
     // Deck already exists
-    logger.log(`Deck '${deckName}' already exists`);
     return true;
   } catch (error) {
-    logger.error(`Error creating deck '${deckName}': ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
 }
@@ -455,37 +385,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
  * This allows the server to communicate via standard input/output streams.
  */
 async function main() {
-  // Log welcome message and status to file, not stdout
-  logger.log('======================================');
-  logger.log('🃏 Yanki MCP Server');
-  logger.log('======================================');
-  logger.log('Server is running and ready to connect with MCP clients.');
-  logger.log('Available Tools:');
-  logger.log('- add_card: Create a new flashcard');
-  logger.log('- get_due_cards: Get cards due for review');
-  logger.log('- get_new_cards: Get new and unseen cards');
-  logger.log('- update_cards: Mark cards as answered');
-  logger.log('This server is meant to be used with MCP clients like Cascade AI.');
-  logger.log('It will not respond to direct terminal input.');
-  logger.log('To test the server, run: npm run inspector');
-  logger.log('======================================');
-  
-  // Check Anki connection
+  // Connect to Anki silently
   try {
-    const deckNames = await client.deck.deckNames();
-    logger.log(`✅ Connected to Anki with ${deckNames.length} decks available`);
-    logger.log(`📝 Today's deck: ${getTodayDeckName()}`);
+    await client.deck.deckNames();
   } catch (error: unknown) {
-    logger.error('❌ Failed to connect to Anki. Make sure Anki is running with AnkiConnect plugin installed.');
-    logger.error(`Error details: ${error instanceof Error ? error.message : String(error)}`);
+    // Silent fail - we don't want to break the MCP protocol
   }
   
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  logger.log('Server connected and waiting for commands...');
 }
 
 main().catch((error) => {
-  logger.error(`Server error: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);
 });

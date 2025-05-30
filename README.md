@@ -148,6 +148,12 @@ If not specified, it defaults to "00_Inbox".
 
 ## Changelog
 
+### 1.0.5 (2025-05-31)
+- Completely removed all console output and logging functionality
+- Simplified codebase by eliminating all non-essential output
+- Ensured 100% clean MCP protocol communication with no extraneous output
+- Removed all filesystem operations related to logging
+
 ### 1.0.4 (2025-05-31)
 - Fixed critical issue with logs directory path being created at filesystem root
 - Improved logging system with robust error handling and fallback mechanisms
