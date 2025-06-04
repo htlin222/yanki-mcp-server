@@ -313,6 +313,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["num"],
         },
       },
+      {
+        name: "create_deck_if_needed",
+        description:
+          "Creates the deck for today if it doesn't already exist. Returns true if the deck exists or is created successfully.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
     ],
   };
 });
@@ -359,11 +368,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const back = String(args.back);
       const deckName = getTodayDeckName();
 
-      // Create the deck if it doesn't exist
-      const deckCreated = await createDeckIfNeeded(deckName);
-      if (!deckCreated) {
-        throw new Error(`Failed to create deck: ${deckName}`);
-      }
+      // Removed deck creation/check from here (now handled by create_deck_if_needed tool)
 
       const note = {
         note: {
@@ -419,6 +424,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           {
             type: "text",
             text: JSON.stringify(cards.slice(0, num)),
+          },
+        ],
+      };
+    }
+
+    case "create_deck_if_needed": {
+      const deckName = getTodayDeckName();
+      const success = await createDeckIfNeeded(deckName);
+
+      if (!success) {
+        throw new Error(`Failed to create deck: ${deckName}`);
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Deck ${deckName} is ready.`,
           },
         ],
       };

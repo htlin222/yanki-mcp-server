@@ -1,6 +1,6 @@
 {
 	"name": "yanki-mcp-server",
-	"version": "1.1.6",
+	"version": "1.1.7",
 	"description": "A Model Context Protocol server for interacting with Anki flashcards",
 	"license": "MIT",
 	"author": "Hsieh-Ting Lin <htlin222@gmail.com>",
