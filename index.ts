@@ -411,17 +411,13 @@ function patchGlobalJsonParse(): void {
       // First try the original parse
       return originalJsonParse.call(JSON, text, ...args);
     } catch (err) {
-      // If it's a string that starts with common Anki output patterns, return a safe value
+      // If it's a string, attempt to wrap in JSON format
       if (typeof text === "string") {
-        if (
-          /^Deck\s["']?.*["']?\s(already exists|created)\.?$/i.test(
-            text.trim()
-          ) ||
-          /^Created card with id \d+$/i.test(text.trim())
-        ) {
-          // Return an empty object as a safe fallback
-          return {};
-        }
+        const safeText = text
+          .trim()
+          .replace(/\\/g, "\\\\")
+          .replace(/"/g, '\\"');
+        return { message: safeText };
       }
       // Otherwise, re-throw the error
       throw err;
