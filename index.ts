@@ -443,7 +443,7 @@ async function main() {
         try {
           return await original.apply(this, args);
         } catch (err) {
-          console.error(`Wrapped ${methodName} threw:`, err);
+          console.warn(`Wrapped ${methodName} threw:`, err);
           if (err instanceof SyntaxError && err.message.includes("JSON")) {
             // Return a safe default for JSON parsing errors
             return null;
