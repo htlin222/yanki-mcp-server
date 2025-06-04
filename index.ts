@@ -427,15 +427,18 @@ function patchGlobalJsonParse(): void {
 
 // Intercept process.stdout.write to suppress non-JSON output
 const originalStdoutWrite = process.stdout.write.bind(process.stdout);
-process.stdout.write = (chunk, encoding, callback) => {
+
+process.stdout.write = function (
+  chunk: any,
+  encoding?: any,
+  callback?: any
+): boolean {
   try {
     const str = typeof chunk === "string" ? chunk : chunk.toString();
-    // Only allow JSON-RPC messages to pass through
     if (str.trim().startsWith('{"jsonrpc"')) {
       return originalStdoutWrite(chunk, encoding, callback);
     }
-    // Drop everything else silently
-    return true;
+    return true; // silently drop
   } catch {
     return true;
   }
