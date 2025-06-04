@@ -150,6 +150,7 @@ function getTodayDeckName(): string {
 
 /**
  * Creates a deck if it doesn't already exist, robustly handling non-JSON responses and AnkiConnect errors.
+ * Also clones the default deck config and assigns it to the new deck.
  * @param deckName The name of the deck to create
  * @returns Promise resolving to true if deck was created or already exists
  */
@@ -162,6 +163,18 @@ async function createDeckIfNeeded(deckName: string): Promise<boolean> {
 
     try {
       await client.deck.createDeck({ deck: deckName });
+
+      // Clone the default config and assign it to the new deck
+      const defaultConfigId = 1; // usually 1 is the default config in Anki
+      const clonedConfigId = await client.deck.cloneDeckConfigId({
+        name: `${deckName}::config`,
+        cloneFrom: defaultConfigId,
+      });
+
+      await client.deck.setDeckConfigId({
+        decks: [deckName],
+        configId: clonedConfigId,
+      });
     } catch (e: any) {
       const message = typeof e === "string" ? e : e?.message;
       if (typeof message === "string" && message.includes("already exists")) {
