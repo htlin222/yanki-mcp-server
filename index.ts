@@ -149,26 +149,42 @@ function getTodayDeckName(): string {
 }
 
 /**
- * Creates a deck if it doesn't already exist
+ * Creates a deck if it doesn't already exist, robustly handling non-JSON responses and AnkiConnect errors.
  * @param deckName The name of the deck to create
  * @returns Promise resolving to true if deck was created or already exists
  */
 async function createDeckIfNeeded(deckName: string): Promise<boolean> {
   try {
-    // Get list of existing decks
     const deckNames = await client.deck.deckNames();
-
-    // If deck doesn't exist, create it
-    if (!deckNames.includes(deckName)) {
-      // Use YankiConnect's native createDeck method
-      const deckId = await client.deck.createDeck({ deck: deckName });
-      return deckId !== null;
+    if (deckNames && Array.isArray(deckNames) && deckNames.includes(deckName)) {
+      return true;
     }
 
-    // Deck already exists
-    return true;
+    try {
+      await client.deck.createDeck({ deck: deckName });
+    } catch (e: any) {
+      const message = typeof e === "string" ? e : e?.message;
+      if (typeof message === "string" && message.includes("already exists")) {
+        // Deck already exists, treat as success
+      } else {
+        throw e;
+      }
+    }
+
+    // Confirm again whether the deck exists after attempting to create it
+    const updatedDeckNames = await client.deck.deckNames();
+    return (
+      Array.isArray(updatedDeckNames) && updatedDeckNames.includes(deckName)
+    );
   } catch (error) {
-    return false;
+    try {
+      const fallbackDeckNames = await client.deck.deckNames();
+      return (
+        Array.isArray(fallbackDeckNames) && fallbackDeckNames.includes(deckName)
+      );
+    } catch {
+      return false;
+    }
   }
 }
 
