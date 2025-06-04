@@ -171,6 +171,10 @@ async function createDeckIfNeeded(deckName: string): Promise<boolean> {
         cloneFrom: defaultConfigId,
       });
 
+      if (typeof clonedConfigId !== "number") {
+        throw new Error("Failed to clone deck config");
+      }
+
       await client.deck.setDeckConfigId({
         decks: [deckName],
         configId: clonedConfigId,
