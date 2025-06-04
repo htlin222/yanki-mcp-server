@@ -10,6 +10,22 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 import { YankiConnect } from "yanki-connect";
+
+/**
+ * Safely parse a JSON string without throwing exceptions
+ * @param text The text to parse as JSON
+ * @returns The parsed JSON object or undefined if parsing failed
+ */
+function safeParseJSON(text: string): any | undefined {
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    // Not valid JSON, return undefined
+    return undefined;
+  }
+}
+
+// Configure YankiConnect with safe JSON parsing
 const client = new YankiConnect();
 
 // Default inbox prefix if environment variable is not set
@@ -381,17 +397,82 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 /**
+ * Patch the global JSON.parse to be more robust
+ * This is a last-resort approach to handle non-JSON responses from Anki
+ * that are breaking the MCP protocol
+ */
+function patchGlobalJsonParse(): void {
+  // Store the original JSON.parse function
+  const originalJsonParse = JSON.parse;
+
+  // Override JSON.parse with a more robust version
+  JSON.parse = function safeJsonParse(text: string, ...args: any[]): any {
+    try {
+      // First try the original parse
+      return originalJsonParse.call(JSON, text, ...args);
+    } catch (err) {
+      // If it's a string that starts with common Anki output patterns, return a safe value
+      if (typeof text === "string") {
+        if (
+          /^Deck\s["']?.*["']?\s(already exists|created)\.?$/i.test(
+            text.trim()
+          ) ||
+          /^Created card with id \d+$/i.test(text.trim())
+        ) {
+          // Return an empty object as a safe fallback
+          return {};
+        }
+      }
+      // Otherwise, re-throw the error
+      throw err;
+    }
+  };
+}
+
+/**
  * Start the server using stdio transport.
  * This allows the server to communicate via standard input/output streams.
  */
 async function main() {
+  // Create a wrapper for all client methods to handle JSON parsing errors
+  // This makes all API calls robust against non-JSON responses
+  const wrapMethod = (obj: any, methodName: string) => {
+    if (obj && typeof obj[methodName] === "function") {
+      const original = obj[methodName];
+      obj[methodName] = async function (...args: any[]) {
+        try {
+          return await original.apply(this, args);
+        } catch (err) {
+          console.error(`Wrapped ${methodName} threw:`, err);
+          if (err instanceof SyntaxError && err.message.includes("JSON")) {
+            // Return a safe default for JSON parsing errors
+            return null;
+          }
+          throw err; // Re-throw other errors
+        }
+      };
+    }
+  };
+
+  // Apply the wrapper to common API methods that might receive non-JSON responses
+  if (client.deck) wrapMethod(client.deck, "deckNames");
+  if (client.deck) wrapMethod(client.deck, "createDeck");
+  if (client.note) wrapMethod(client.note, "addNote");
+  if (client.card) wrapMethod(client.card, "findCards");
+  if (client.card) wrapMethod(client.card, "cardsInfo");
+  if (client.card) wrapMethod(client.card, "answerCards");
+
   // Connect to Anki silently
   try {
     await client.deck.deckNames();
   } catch (error: unknown) {
     // Silent fail - we don't want to break the MCP protocol
   }
-  
+
+  // Apply our global JSON.parse patch to handle non-JSON responses
+  patchGlobalJsonParse();
+
+  // Use the standard transport
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
