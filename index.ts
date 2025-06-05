@@ -368,7 +368,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const back = String(args.back);
       const deckName = getTodayDeckName();
 
-      // Removed deck creation/check from here (now handled by create_deck_if_needed tool)
+      // Ensure the deck exists or is created before adding the card
+      const deckExists = await createDeckIfNeeded(deckName);
+      if (!deckExists) {
+        throw new Error(`Deck ${deckName} could not be created or found`);
+      }
 
       const note = {
         note: {
