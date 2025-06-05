@@ -10,22 +10,6 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 import { YankiConnect } from "yanki-connect";
-
-/**
- * Safely parse a JSON string without throwing exceptions
- * @param text The text to parse as JSON
- * @returns The parsed JSON object or undefined if parsing failed
- */
-function safeParseJSON(text: string): any | undefined {
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    // Not valid JSON, return undefined
-    return undefined;
-  }
-}
-
-// Configure YankiConnect with safe JSON parsing
 const client = new YankiConnect();
 
 // Default inbox prefix if environment variable is not set
@@ -149,59 +133,26 @@ function getTodayDeckName(): string {
 }
 
 /**
- * Creates a deck if it doesn't already exist, robustly handling non-JSON responses and AnkiConnect errors.
- * Also clones the default deck config and assigns it to the new deck.
+ * Creates a deck if it doesn't already exist
  * @param deckName The name of the deck to create
  * @returns Promise resolving to true if deck was created or already exists
  */
 async function createDeckIfNeeded(deckName: string): Promise<boolean> {
   try {
+    // Get list of existing decks
     const deckNames = await client.deck.deckNames();
-    if (deckNames && Array.isArray(deckNames) && deckNames.includes(deckName)) {
-      return true;
+
+    // If deck doesn't exist, create it
+    if (!deckNames.includes(deckName)) {
+      // Use YankiConnect's native createDeck method
+      const deckId = await client.deck.createDeck({ deck: deckName });
+      return deckId !== null;
     }
 
-    try {
-      await client.deck.createDeck({ deck: deckName });
-
-      // Clone the default config and assign it to the new deck
-      const defaultConfigId = 1; // usually 1 is the default config in Anki
-      const clonedConfigId = await client.deck.cloneDeckConfigId({
-        name: `${deckName}::config`,
-        cloneFrom: defaultConfigId,
-      });
-
-      if (typeof clonedConfigId !== "number") {
-        throw new Error("Failed to clone deck config");
-      }
-
-      await client.deck.setDeckConfigId({
-        decks: [deckName],
-        configId: clonedConfigId,
-      });
-    } catch (e: any) {
-      const message = typeof e === "string" ? e : e?.message;
-      if (typeof message === "string" && message.includes("already exists")) {
-        // Deck already exists, treat as success
-      } else {
-        throw e;
-      }
-    }
-
-    // Confirm again whether the deck exists after attempting to create it
-    const updatedDeckNames = await client.deck.deckNames();
-    return (
-      Array.isArray(updatedDeckNames) && updatedDeckNames.includes(deckName)
-    );
+    // Deck already exists
+    return true;
   } catch (error) {
-    try {
-      const fallbackDeckNames = await client.deck.deckNames();
-      return (
-        Array.isArray(fallbackDeckNames) && fallbackDeckNames.includes(deckName)
-      );
-    } catch {
-      return false;
-    }
+    return false;
   }
 }
 
@@ -313,15 +264,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["num"],
         },
       },
-      {
-        name: "create_deck_if_needed",
-        description:
-          "Creates the deck for today if it doesn't already exist. Returns true if the deck exists or is created successfully.",
-        inputSchema: {
-          type: "object",
-          properties: {},
-        },
-      },
     ],
   };
 });
@@ -368,10 +310,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const back = String(args.back);
       const deckName = getTodayDeckName();
 
-      // Ensure the deck exists or is created before adding the card
-      const deckExists = await createDeckIfNeeded(deckName);
-      if (!deckExists) {
-        throw new Error(`Deck ${deckName} could not be created or found`);
+      // Create the deck if it doesn't exist
+      const deckCreated = await createDeckIfNeeded(deckName);
+      if (!deckCreated) {
+        throw new Error(`Failed to create deck: ${deckName}`);
       }
 
       const note = {
@@ -433,126 +375,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
-    case "create_deck_if_needed": {
-      const deckName = getTodayDeckName();
-      const success = await createDeckIfNeeded(deckName);
-
-      if (!success) {
-        throw new Error(`Failed to create deck: ${deckName}`);
-      }
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Deck ${deckName} is ready.`,
-          },
-        ],
-      };
-    }
-
     default:
       throw new Error("Unknown tool");
   }
 });
 
 /**
- * Patch the global JSON.parse to be more robust
- * This is a last-resort approach to handle non-JSON responses from Anki
- * that are breaking the MCP protocol
- */
-function patchGlobalJsonParse(): void {
-  // Store the original JSON.parse function
-  const originalJsonParse = JSON.parse;
-
-  // Override JSON.parse with a more robust version
-  JSON.parse = function safeJsonParse(text: string, ...args: any[]): any {
-    try {
-      // First try the original parse
-      return originalJsonParse.call(JSON, text, ...args);
-    } catch (err) {
-      // If it's a string, attempt to wrap in JSON format
-      if (typeof text === "string") {
-        const safeText = text
-          .trim()
-          .replace(/\\/g, "\\\\")
-          .replace(/"/g, '\\"');
-        return { message: safeText };
-      }
-      // Otherwise, re-throw the error
-      throw err;
-    }
-  };
-}
-
-// Intercept process.stdout.write to suppress non-JSON output
-const originalStdoutWrite = process.stdout.write.bind(process.stdout);
-
-process.stdout.write = function (
-  chunk: any,
-  encoding?: any,
-  callback?: any
-): boolean {
-  try {
-    const str = typeof chunk === "string" ? chunk : chunk.toString();
-    if (str.trim().startsWith('{"jsonrpc"')) {
-      return originalStdoutWrite(chunk, encoding, callback);
-    }
-    return true; // silently drop
-  } catch {
-    return true;
-  }
-};
-
-/**
  * Start the server using stdio transport.
  * This allows the server to communicate via standard input/output streams.
  */
 async function main() {
-  // Create a wrapper for all client methods to handle JSON parsing errors
-  // This makes all API calls robust against non-JSON responses
-  const wrapMethod = (obj: any, methodName: string) => {
-    if (obj && typeof obj[methodName] === "function") {
-      const original = obj[methodName];
-      obj[methodName] = async function (...args: any[]) {
-        try {
-          return await original.apply(this, args);
-        } catch (err) {
-          // Removed console.warn to prevent non-JSON output
-          if (err instanceof SyntaxError && err.message.includes("JSON")) {
-            // Return a safe default for JSON parsing errors
-            return null;
-          }
-          throw err; // Re-throw other errors
-        }
-      };
-    }
-  };
-
-  // Apply the wrapper to common API methods that might receive non-JSON responses
-  if (client.deck) wrapMethod(client.deck, "deckNames");
-  if (client.deck) wrapMethod(client.deck, "createDeck");
-  if (client.note) wrapMethod(client.note, "addNote");
-  if (client.card) wrapMethod(client.card, "findCards");
-  if (client.card) wrapMethod(client.card, "cardsInfo");
-  if (client.card) wrapMethod(client.card, "answerCards");
-
   // Connect to Anki silently
   try {
     await client.deck.deckNames();
   } catch (error: unknown) {
     // Silent fail - we don't want to break the MCP protocol
   }
-
-  // Apply our global JSON.parse patch to handle non-JSON responses
-  patchGlobalJsonParse();
-
-  // Use the standard transport
+  
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
 
 main().catch((error) => {
-  console.error("Fatal error:", error);
   process.exit(1);
 });
